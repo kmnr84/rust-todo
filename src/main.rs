@@ -5,13 +5,17 @@ use std::fs::{OpenOptions, File};
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 
-const FILE_NAME: &str = "tasks.txt"; // タスクを保存するファイル名
-
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut tasks: VecDeque<String> = load_tasks()?;
-
     // コマンドライン引数の処理
     let args: Vec<String> = env::args().collect();
+    let file_name: &str = "tasks.txt"; // デフォルトのファイル名
+
+    execute_command(&args, file_name)?;
+    Ok(())
+}
+
+fn execute_command(args: &[String], file_name: &str) -> Result<(), Box<dyn Error>> {
+    let mut tasks: VecDeque<String> = load_tasks(file_name)?;
 
     if args.len() > 1 {
         match args[1].as_str() {
@@ -22,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 let task = args[2..].join(" "); // 引数を結合してひとつのタスクにする
                 // tasks.push_back(task.clone()); // loop で待機しながら組むようなときはメモリに残す
-                save_task(&task)?; // タスクをファイルに保存
+                save_task(&task,file_name)?; // タスクをファイルに保存
                 println!("Task added: {}", task);
             }
             "list" => {
@@ -39,7 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let task_num: usize = args[2].parse().unwrap_or(0);
                 if task_num > 0 && task_num <= tasks.len() {
                     tasks.remove(task_num - 1);
-                    save_all_tasks(&tasks)?;
+                    save_all_tasks(&tasks, file_name)?;
                     println!("Task {} removed.", task_num);
                 } else {
                     println!("Invalid task number.");
@@ -57,10 +61,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 /// タスクをファイルから読み込んで VecDeque にする
-fn load_tasks() -> Result<VecDeque<String>, Box<dyn Error>> {
+fn load_tasks(file_name: &str) -> Result<VecDeque<String>, Box<dyn Error>> {
     let mut tasks = VecDeque::new();
-    if Path::new(FILE_NAME).exists() {
-        let file = File::open(FILE_NAME)?;
+    if Path::new(file_name).exists() {
+        let file = File::open(file_name)?;
         let reader = io::BufReader::new(file);
 
         for line in reader.lines() {
@@ -71,15 +75,15 @@ fn load_tasks() -> Result<VecDeque<String>, Box<dyn Error>> {
 }
 
 /// タスクをファイルに追加する
-fn save_task(task: &str) -> Result<(), Box<dyn Error>> {
-    let mut file = OpenOptions::new().append(true).create(true).open(FILE_NAME)?;
+fn save_task(task: &str, file_name: &str) -> Result<(), Box<dyn Error>> {
+    let mut file = OpenOptions::new().append(true).create(true).open(file_name)?;
     writeln!(file, "{}", task)?;
     Ok(())
 }
 
 /// すべてのタスクをファイルに保存する
-fn save_all_tasks(tasks: &VecDeque<String>) -> Result<(), Box<dyn Error>> {
-    let mut file = File::create(FILE_NAME)?;
+fn save_all_tasks(tasks: &VecDeque<String>, file_name: &str) -> Result<(), Box<dyn Error>> {
+    let mut file = File::create(file_name)?;
     for task in tasks {
         writeln!(file, "{}", task)?;
     }
