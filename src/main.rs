@@ -89,3 +89,73 @@ fn save_all_tasks(tasks: &VecDeque<String>, file_name: &str) -> Result<(), Box<d
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn setup(file_name: &str) {
+        let _ = fs::remove_file(file_name); // テスト用ファイルを削除
+    }
+
+    fn teardown(file_name: &str) {
+        let _ = fs::remove_file(file_name); // テスト用ファイルを削除
+    }
+
+    #[test]
+    fn test_execute_command_add_task() {
+        let test_file = "test_execute_command_add_task.txt"; // テスト用ファイル名
+        setup(test_file);
+
+        let args = vec![
+            "rust-todo".to_string(),
+            "add".to_string(),
+            "テストタスク".to_string(),
+        ];
+        assert!(execute_command(&args, test_file).is_ok());
+
+        let tasks = load_tasks(test_file).unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0], "テストタスク");
+
+        teardown(test_file);
+    }
+
+    #[test]
+    fn test_execute_command_list() {
+        let test_file = "test_execute_command_list.txt"; // テスト用ファイル名
+        setup(test_file);
+
+        let args = vec!["rust-todo".to_string(), "list".to_string()];
+        assert!(execute_command(&args, test_file).is_ok());
+
+        let tasks = load_tasks(test_file).unwrap();
+        assert!(tasks.is_empty()); // 空であるべき
+
+        teardown(test_file);
+    }
+
+    #[test]
+    fn test_execute_command_remove_tesk() {
+        let test_file = "test_execute_command_remove_task.txt";
+        setup(test_file);
+
+        let add_args_1 = vec!["rust-todo".to_string(), "add".to_string(), "test1".to_string()];
+        assert!(execute_command(&add_args_1, test_file).is_ok());
+        let add_args_2 = vec!["rust-todo".to_string(), "add".to_string(), "test2".to_string()];
+        assert!(execute_command(&add_args_2, test_file).is_ok());
+        let add_args_3 = vec!["rust-todo".to_string(), "add".to_string(), "test3".to_string()];
+        assert!(execute_command(&add_args_3, test_file).is_ok());
+
+        let args = vec!["rust-todo".to_string(), "remove".to_string(), "2".to_string()];
+        assert!(execute_command(&args, test_file).is_ok());
+
+        let tasks = load_tasks(test_file).unwrap();
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(tasks[0], "test1");
+        assert_eq!(tasks[1], "test3");
+
+        teardown(test_file);
+    }
+}
